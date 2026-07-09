@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title> Kalkulator Tariff baru TNB</title>
+    <author name="Daus" email="firdausly98@gmail.com"></author>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+    <link rel="stylesheet" href="https://unpkg.com/gridjs/dist/theme/mermaid.min.css" />
+</head>
+
+<body>
+    <h1> Kalkulator Tariff baru TNB </h1>
+    <input type="text" id="currentUsage" placeholder="Isi Jumlah KWatt yang digunakan" />
+    <button onclick="calculateTariff()">Kira Sekarang</button>
+    <h5> Sila ambil perhatian bahawa ini adalah anggaran sahaja tanpa AFA dan mungkin berbeza dengan bil sebenar. </h5>
+    <h6> Sila Rujuk <a href="https://www.mytnb.com.my/tariff/index.html?lang=bm&v=1.1.61"
+            target="_blank">https://www.mytnb.com.my/tariff/index.html</a> untuk maklumat lanjut.</h6>
+    <div id="table-container"></div>
+    <div id="table-container2"></div>
+    <p id="result"></p>
+    <script src="https://unpkg.com/gridjs/dist/gridjs.umd.js" type="text/javascript"></script>
+    <script>
+
+
+        let cajTenaga = 0;
+        let kadarCajTenaga = 0;
+        let cajKapasiti = 0;
+        let kadarCajKapasiti = 0;
+        let cajRangkaian = 0;
+        let kadarCajRangkaian = 0;
+        let cajPeruncitan = 0;
+        //Diskaun insentif cekap tenaga
+        let kadarDiskaunInsentifCekapTenaga = 0;
+        let diskaunInsentifCekapTenaga = 0;
+        //Caj tambahan
+        let cajKwttb = 0;
+        let cajPerkhidmatan = 0;
+        let totalCaj = 0;
+        let totalCajTanpaCukai = 0;
+        calculateTariff = () => {
+            const usage = document.getElementById('currentUsage').value;
+            let cajTenagaBawah1500 = 0.2703;
+            let cajTenagaAtas1500 = 0.3703;
+            let cajKapasiti = 0.0455;
+            let cajRangkaian = 0.1285;
+            let cajPeruncitan = 10;
+            let totalCaj = 0;
+            let cajKwttb = 0.016;
+            let cajPerkhidmatan = 0.008;
+
+            function kiraDiskaunInsentifCekapTenaga(kegunaanSemasa) {
+                const tiers = [
+                    { limit: 200, rate: 0.25 }, { limit: 250, rate: 0.245 },
+                    { limit: 300, rate: 0.225 }, { limit: 350, rate: 0.210 },
+                    { limit: 400, rate: 0.17 }, { limit: 450, rate: 0.145 },
+                    { limit: 500, rate: 0.12 }, { limit: 550, rate: 0.105 },
+                    { limit: 600, rate: 0.09 }, { limit: 650, rate: 0.075 },
+                    { limit: 700, rate: 0.05 }, { limit: 750, rate: 0.045 },
+                    { limit: 800, rate: 0.04 }, { limit: 850, rate: 0.025 },
+                    { limit: 900, rate: 0.01 }, { limit: 1000, rate: 0.005 }
+                ];
+
+                // Find the first tier where the currentKwh is lower or equal to the limit
+                const matchedTier = tiers.find(tier => kegunaanSemasa <= tier.limit);
+
+                // Fallback to 0 if consumption exceeds 1000 kWh
+                const rate = matchedTier ? matchedTier.rate : 0;
+
+                return rate;
+            }
+
+            cajPeruncitan = usage > 600 ? cajPeruncitan : 0;
+            kadarCajTenaga = usage <= 1500 ? cajTenagaBawah1500 : cajTenagaAtas1500;
+            cajTenaga = kadarCajTenaga * usage;
+            kadarCajKapasiti = cajKapasiti;
+            cajKapasiti = kadarCajKapasiti * usage;
+            kadarCajRangkaian = cajRangkaian;
+            cajRangkaian = kadarCajRangkaian * usage;
+            kadarDiskaunInsentifCekapTenaga = kiraDiskaunInsentifCekapTenaga(usage);
+            diskaunInsentifCekapTenaga = usage * kadarDiskaunInsentifCekapTenaga;
+
+            totalCajTanpaCukai = cajTenaga + cajKapasiti + cajRangkaian + cajPeruncitan - diskaunInsentifCekapTenaga;
+
+            cajKwttb = usage > 300 ? totalCajTanpaCukai * cajKwttb : 0;
+            cajPerkhidmatan = usage > 600 ? totalCajTanpaCukai * cajPerkhidmatan : 0;
+
+            totalCaj = totalCajTanpaCukai + cajKwttb + cajPerkhidmatan;
+
+            grid.updateConfig({
+                data: [
+                    ['Caj Tenaga (RM' + kadarCajTenaga.toFixed(4) + '/kWJ)', 'RM ' + cajTenaga.toFixed(2)],
+                    ['Caj Kapasiti (RM' + kadarCajKapasiti.toFixed(4) + '/kWJ)', 'RM ' + cajKapasiti.toFixed(2)],
+                    ['Caj Rangkaian (RM' + kadarCajRangkaian.toFixed(4) + '/kWJ)', 'RM ' + cajRangkaian.toFixed(2)],
+                    ['Caj Peruncitan', 'RM ' + cajPeruncitan.toFixed(2)],
+                    ['Diskaun Insentif Cekap Tenaga (-RM' + kadarDiskaunInsentifCekapTenaga.toFixed(4) + '/kWJ)', '-RM ' + diskaunInsentifCekapTenaga.toFixed(2)],
+                    ['Caj Penggunaan Semasa', 'RM ' + totalCajTanpaCukai.toFixed(2)]
+                ]
+            }).forceRender();
+
+            cajCajLain.updateConfig({
+                data: [
+                    ['Caj KWTTB (1.6%)', 'RM ' + cajKwttb.toFixed(2)],
+                    ['Caj Perkhidmatan (8%)', 'RM ' + cajPerkhidmatan.toFixed(2)],
+                    ['Jumlah Anggaran Bil', 'RM ' + totalCaj.toFixed(2)]
+                ]
+            }).forceRender();
+        }
+
+        const grid = new gridjs.Grid({
+            columns: ['Caj Penggunaan', 'Jumlah'],
+            data: [
+                ['Caj Tenaga (RM' + kadarCajTenaga.toFixed(4) + '/kWJ)', 'RM 0.00'],
+                ['Caj Kapasiti (RM' + kadarCajKapasiti.toFixed(4) + '/kWJ)', 'RM 0.00'],
+                ['Caj Rangkaian (RM' + kadarCajRangkaian.toFixed(4) + '/kWJ)', 'RM 0.00'],
+                ['Caj Peruncitan', 'RM 0.00'],
+                ['Diskaun Insentif Cekap Tenaga(-RM 0.00', 'RM 0.00'],
+                ['Caj KWTTB (1.6%)', 'RM 0.00'],
+                ['Caj Perkhidmatan (8%)', 'RM 0.00'],
+                ['Caj Penggunaan Semasa', 'RM 0.00']
+            ]
+        }).render(document.getElementById('table-container'));
+
+        const cajCajLain = new gridjs.Grid({
+            columns: ['Caj-Caj Lain', 'Jumlah'],
+            data: [
+                ['Caj KWTTB (1.6%)', 'RM 0.00'],
+                ['Caj Perkhidmatan (8%)', 'RM 0.00'],
+                ['Jumlah Anggaran Bil', 'RM 0.00']
+            ]
+        }).render(document.getElementById('table-container2'));
+    </script>
+
+</body>
+
+</html>
