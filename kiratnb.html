@@ -10,8 +10,14 @@
 
 <body>
     <h1> Kalkulator Tariff baru TNB </h1>
-    <input type="text" id="currentUsage" placeholder="Isi Jumlah KWatt yang digunakan" />
-    <button onclick="calculateTariff()">Kira Sekarang</button>
+    <div id="inputForm" style="display: flex; gap: 8px;">
+        <label for="bacaanTerdahulu"> Bacaan Terdahulu:</label>
+        <input type="text" name="bacaanTerdahulu" id="bacaanTerdahulu" placeholder="0">
+        <label for="bacaanSemasa"> Bacaan Semasa:</label>
+        <input type="text" name="bacaanSemasa" id="bacaanSemasa" placeholder="0">
+        <label for="jumlahKWatt"> Jumlah KWatt:</label>
+        <input type="text" name="jumlahKWatt" id="jumlahKWatt" placeholder="Isi Jumlah KWatt">
+    </div>
     <h5> Sila ambil perhatian bahawa ini adalah anggaran sahaja tanpa AFA dan mungkin berbeza dengan bil sebenar. </h5>
     <h6> Sila Rujuk <a href="https://www.mytnb.com.my/tariff/index.html?lang=bm&v=1.1.61"
             target="_blank">https://www.mytnb.com.my/tariff/index.html</a> untuk maklumat lanjut.</h6>
@@ -38,7 +44,7 @@
         let totalCaj = 0;
         let totalCajTanpaCukai = 0;
         calculateTariff = () => {
-            const usage = document.getElementById('currentUsage').value;
+            const usage = document.getElementById('jumlahKWatt').value;
             let cajTenagaBawah1500 = 0.2703;
             let cajTenagaAtas1500 = 0.3703;
             let cajKapasiti = 0.0455;
@@ -106,6 +112,8 @@
             }).forceRender();
         }
 
+
+
         const grid = new gridjs.Grid({
             columns: ['Caj Penggunaan', 'Jumlah'],
             data: [
@@ -113,7 +121,7 @@
                 ['Caj Kapasiti (RM' + kadarCajKapasiti.toFixed(4) + '/kWJ)', 'RM 0.00'],
                 ['Caj Rangkaian (RM' + kadarCajRangkaian.toFixed(4) + '/kWJ)', 'RM 0.00'],
                 ['Caj Peruncitan', 'RM 0.00'],
-                ['Diskaun Insentif Cekap Tenaga(-RM 0.00', 'RM 0.00'],
+                ['Diskaun Insentif Cekap Tenaga(-RM 0.00', '-RM 0.00'],
                 ['Caj KWTTB (1.6%)', 'RM 0.00'],
                 ['Caj Perkhidmatan (8%)', 'RM 0.00'],
                 ['Caj Penggunaan Semasa', 'RM 0.00']
@@ -128,6 +136,33 @@
                 ['Jumlah Anggaran Bil', 'RM 0.00']
             ]
         }).render(document.getElementById('table-container2'));
+
+
+        function kiraKWatt() {
+            const bacaanTerdahulu = parseFloat(document.getElementById('bacaanTerdahulu').value);
+            const bacaanSemasa = parseFloat(document.getElementById('bacaanSemasa').value);
+            if (!isNaN(bacaanTerdahulu) && !isNaN(bacaanSemasa)) {
+                const jumlahKWatt = bacaanSemasa - bacaanTerdahulu;
+                document.getElementById('jumlahKWatt').value = jumlahKWatt >= 0 ? jumlahKWatt : 0;
+            }
+        }
+
+        document.getElementById('bacaanTerdahulu').addEventListener('input', function () {
+            kiraKWatt();
+            calculateTariff();
+        });
+
+        document.getElementById('bacaanSemasa').addEventListener('input', function () {
+            kiraKWatt();
+            calculateTariff();
+        });
+
+
+        document.getElementById('jumlahKWatt').addEventListener('input', function () {
+            calculateTariff();   // Calls your function
+        });
+
+
     </script>
 
 </body>
