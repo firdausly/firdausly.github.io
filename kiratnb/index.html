@@ -28,34 +28,35 @@
     <div id="table-container2"></div>
     <p id="result"></p>
     <script src="https://unpkg.com/gridjs/dist/gridjs.umd.js" type="text/javascript"></script>
+    <script src='https://cdn.jsdelivr.net/npm/big.js@7.0.1/big.min.js'></script>
     <script>
 
 
-        let cajTenaga = 0;
-        let kadarCajTenaga = 0;
-        let cajKapasiti = 0;
-        let kadarCajKapasiti = 0;
-        let cajRangkaian = 0;
-        let kadarCajRangkaian = 0;
-        let cajPeruncitan = 0;
+        let cajTenaga = new Big(0);
+        let kadarCajTenaga = new Big(0);
+        let cajKapasiti = new Big(0);
+        let kadarCajKapasiti = new Big(0);
+        let cajRangkaian = new Big(0);
+        let kadarCajRangkaian = new Big(0);
+        let cajPeruncitan = new Big(0);
         //Diskaun insentif cekap tenaga
-        let kadarDiskaunInsentifCekapTenaga = 0;
-        let diskaunInsentifCekapTenaga = 0;
+        let kadarDiskaunInsentifCekapTenaga = new Big(0);
+        let diskaunInsentifCekapTenaga = new Big(0);
         //Caj tambahan
-        let cajKwttb = 0;
-        let cajPerkhidmatan = 0;
-        let totalCaj = 0;
-        let totalCajTanpaCukai = 0;
+        let cajKwttb = new Big(0);
+        let cajPerkhidmatan = new Big(0);
+        let totalCaj = new Big(0);
+        let totalCajTanpaCukai = new Big(0);
         calculateTariff = () => {
-            const usage = document.getElementById('jumlahKWatt').value;
-            let cajTenagaBawah1500 = 0.2703;
-            let cajTenagaAtas1500 = 0.3703;
-            let cajKapasiti = 0.0455;
-            let cajRangkaian = 0.1285;
-            let cajPeruncitan = 10;
-            let totalCaj = 0;
-            let cajKwttb = 0.016;
-            let cajPerkhidmatan = 0.008;
+            const usage = new Big(document.getElementById('jumlahKWatt').value);
+            let cajTenagaBawah1500 = new Big(0.2703);
+            let cajTenagaAtas1500 = new Big(0.3703);
+            let kadarCajKapasiti = new Big(0.0455);
+            let kadarCajRangkaian = new Big(0.1285);
+            let cajPeruncitan = new Big(10);
+            let totalCaj = new Big(0);
+            let cajKwttb = new Big(0.016);
+            let cajPerkhidmatan = new Big(0.008);
 
             function kiraDiskaunInsentifCekapTenaga(kegunaanSemasa) {
                 const tiers = [
@@ -78,22 +79,25 @@
                 return rate;
             }
 
-            cajPeruncitan = usage > 600 ? cajPeruncitan : 0;
+            cajPeruncitan = usage > 600 ? new Big(10) : new Big(0);
             kadarCajTenaga = usage <= 1500 ? cajTenagaBawah1500 : cajTenagaAtas1500;
-            cajTenaga = kadarCajTenaga * usage;
-            kadarCajKapasiti = cajKapasiti;
-            cajKapasiti = kadarCajKapasiti * usage;
-            kadarCajRangkaian = cajRangkaian;
-            cajRangkaian = kadarCajRangkaian * usage;
-            kadarDiskaunInsentifCekapTenaga = kiraDiskaunInsentifCekapTenaga(usage);
-            diskaunInsentifCekapTenaga = usage * kadarDiskaunInsentifCekapTenaga;
+            cajTenaga = kadarCajTenaga.times(usage);
+            cajKapasiti = kadarCajKapasiti.times(usage);
+            cajRangkaian = kadarCajRangkaian.times(usage);
+            kadarDiskaunInsentifCekapTenaga = new Big(kiraDiskaunInsentifCekapTenaga(usage));
+            diskaunInsentifCekapTenaga = usage.times(kadarDiskaunInsentifCekapTenaga);
 
-            totalCajTanpaCukai = cajTenaga + cajKapasiti + cajRangkaian + cajPeruncitan - diskaunInsentifCekapTenaga;
+            const cajTenagaRounded = cajTenaga.round(2, Big.roundHalfUp);
+            const cajKapasitiRounded = cajKapasiti.round(2, Big.roundHalfUp);
+            const cajRangkaianRounded = cajRangkaian.round(2, Big.roundHalfUp);
+            const diskaunInsentifCekapTenagaRounded = diskaunInsentifCekapTenaga.round(2, Big.roundHalfUp);
 
-            cajKwttb = usage > 300 ? totalCajTanpaCukai * cajKwttb : 0;
-            cajPerkhidmatan = usage > 600 ? totalCajTanpaCukai * cajPerkhidmatan : 0;
+            totalCajTanpaCukai = cajTenagaRounded.plus(cajKapasitiRounded).plus(cajRangkaianRounded).plus(cajPeruncitan).minus(diskaunInsentifCekapTenagaRounded);
 
-            totalCaj = totalCajTanpaCukai + cajKwttb + cajPerkhidmatan;
+            cajKwttb = usage > 300 ? totalCajTanpaCukai.times(cajKwttb) : new Big(0);
+            cajPerkhidmatan = usage > 600 ? totalCajTanpaCukai.times(cajPerkhidmatan) : new Big(0);
+
+            totalCaj = totalCajTanpaCukai.plus(cajKwttb.round(2, Big.roundHalfUp)).plus(cajPerkhidmatan.round(2, Big.roundHalfUp));
 
             grid.updateConfig({
                 data: [
